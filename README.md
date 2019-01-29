@@ -13,7 +13,7 @@ Book model
 	-- Segment/Type
 	-- Price
 	-- Quantity
-
+	-- ISBN
 REST operations: 
 		-- C - enter list of books -- file input
 			-- check if book exists - if yes - U - increase the quantity
