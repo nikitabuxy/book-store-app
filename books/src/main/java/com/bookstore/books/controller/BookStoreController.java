@@ -19,11 +19,9 @@ public class BookStoreController {
 
   @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity createBookStore(@RequestBody BookStoreDetail bookStoreDetail) {
-      try {
-        return ResponseEntity.ok(bookStoreService.addBookStore(bookStoreDetail));
-      }catch (Exception e){
-        return ResponseEntity.badRequest().body("Bad reqyest");
-      }
-  }
 
+    bookStoreService.validateRequest(bookStoreDetail);
+    bookStoreService.addBookStore(bookStoreDetail);
+    return ResponseEntity.ok("Book store added successfully! ");
+  }
 }
