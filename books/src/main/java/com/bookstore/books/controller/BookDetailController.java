@@ -25,7 +25,7 @@ public class BookDetailController {
     public ResponseEntity addBookToStore(@RequestPart("file") MultipartFile[] multipartFiles) {
         try {
             List<String> invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
-            bookDetailService.createStock(multipartFiles, invalidFiles);
+            bookDetailService.createStockOnSequential(multipartFiles, invalidFiles);
             return ResponseEntity.ok("Book details added successfully! ");
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to read file ");
@@ -38,7 +38,8 @@ public class BookDetailController {
     @PostMapping(value = "/parallel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addBooksToStore(@RequestPart("file")MultipartFile[] multipartFiles){
         try {
-           return ResponseEntity.ok(bookDetailService.createStockOnParallel(multipartFiles));
+            List<String> invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
+           return ResponseEntity.ok(bookDetailService.createStockOnParallel(multipartFiles,invalidFiles));
         }/*catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to read file ");
         }*/ catch (Exception e) {
