@@ -55,7 +55,7 @@ public class BookDetailService {
         for (MultipartFile singleFile : multipartFile
         ) {
             if (!singleFile.getOriginalFilename().endsWith(".csv")) {
-               //TODO check log error
+                //TODO check log error
                 // log.error("Not a valid csv input: " + singleFile.getOriginalFilename());
                 invalidFiles.add(singleFile.getOriginalFilename());
             }
@@ -66,8 +66,8 @@ public class BookDetailService {
     public List<File> convertToFile(MultipartFile[] multipartFile, List<String> invalidFiles) throws IOException {
         List<File> validFiles = new ArrayList<>();
         for (MultipartFile singleFile :
-             multipartFile) {
-            if(!invalidFiles.stream().anyMatch(s-> s.equals(singleFile.getOriginalFilename()))){
+                multipartFile) {
+            if (!invalidFiles.stream().anyMatch(s -> s.equals(singleFile.getOriginalFilename()))) {
                 File file = new File(singleFile.getOriginalFilename());
                 file.createNewFile();
                 FileOutputStream fos = new FileOutputStream(file);
@@ -82,8 +82,8 @@ public class BookDetailService {
     public List<BookDetails> getBookDetail(List<File> fileList) throws IOException {
 
         List<BookDetails> bookDetailsList = new ArrayList<>();
-        for (File file:
-             fileList) {
+        for (File file :
+                fileList) {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
             CSVParser csvParser = new CSVParser(bufferedReader,
                     CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());
@@ -105,7 +105,7 @@ public class BookDetailService {
                 bookDetailsList.add(bookDetails);
             }
         }
-       return bookDetailsList;
+        return bookDetailsList;
     }
 
     public boolean createStock(MultipartFile[] multipartFiles) throws IOException {
@@ -142,37 +142,27 @@ public class BookDetailService {
     public List<String> createStockOnParallel(MultipartFile[] multipartFiles) {
         ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-        Callable<List<String>> validateCsv = () -> {
-            return validateCsvFile(multipartFiles);
-        };
-        Future<List<String>> future = executorService.submit(validateCsv);
+        List<String> invalidFiles = validateCsvFile(multipartFiles);
 
         Runnable convertMultipartToFile = () -> {
-            try{
-                convertToFile(multipartFiles,future.get());
-            }catch (IOException e){
-             log.error("Failed to read csv file ", e);
-            }   catch (  InterruptedException | ExecutionException e ){
-                log.error("failed to convert multipart to file for execution");
+            try {
+                convertToFile(multipartFiles, invalidFiles);
+            } catch (IOException e) {
+                log.error("Failed to read csv file ", e);
             }
         };
         Runnable createStock = () -> {
             try {
                 createStock(multipartFiles);
-            }catch (IOException e){
+            } catch (IOException e) {
                 log.error(" Failed to create stock from input file");
             }
 
         };
         executorService.execute(convertMultipartToFile);
         executorService.execute(createStock);
-        try{
-            List<String> invalidFile = future.get();
-            if(!invalidFile.isEmpty()){
-                return invalidFile;
-            }
-        }catch (ExecutionException e){
-            log.error("Error in execution! ");
+        if (!invalidFiles.isEmpty()) {
+            return invalidFiles;
         }
         return new ArrayList<String>();
     }
