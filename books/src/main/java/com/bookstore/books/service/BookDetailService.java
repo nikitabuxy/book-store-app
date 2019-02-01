@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.bookstore.books.model.BookDetails;
 import com.bookstore.books.repository.BookDetailRepository;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +17,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.*;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -33,93 +36,145 @@ import org.springframework.web.multipart.MultipartFile;
 public class BookDetailService {
 
 
-  @Autowired
-  BookStoreService bookStoreService;
+    @Autowired
+    BookStoreService bookStoreService;
 
-  @Autowired
-  private AmazonS3 amazonS3;
+    @Autowired
+    private AmazonS3 amazonS3;
 
-  @Autowired
-  BookDetailRepository bookDetailRepository;
+    @Autowired
+    BookDetailRepository bookDetailRepository;
 
-  @Value("${aws.s3.survey.bucket}")
-  String bucketName;
+    @Value("${aws.s3.survey.bucket}")
+    String bucketName;
 
-  public List<String> validateCsvFile(MultipartFile[] multipartFile) {
-    List<String> invalidFiles = new ArrayList<>();
 
-    for (MultipartFile singleFile : multipartFile
-    ) {
-      if (!singleFile.getOriginalFilename().endsWith(".csv")) {
-        log.error("Not a valid csv input: " + singleFile.getOriginalFilename());
-          invalidFiles.add(singleFile.getOriginalFilename());
-      }
+    public List<String> validateCsvFile(MultipartFile[] multipartFile) {
+        List<String> invalidFiles = new ArrayList<>();
+
+        for (MultipartFile singleFile : multipartFile
+        ) {
+            if (!singleFile.getOriginalFilename().endsWith(".csv")) {
+               //TODO check log error
+                // log.error("Not a valid csv input: " + singleFile.getOriginalFilename());
+                invalidFiles.add(singleFile.getOriginalFilename());
+            }
+        }
+        return invalidFiles;
     }
-    return invalidFiles;
-  }
 
-  public File convertToFile(MultipartFile multipartFile) throws IOException {
-    File file = new File(multipartFile.getOriginalFilename());
-    file.createNewFile();
-    FileOutputStream fos = new FileOutputStream(file);
-    fos.write(multipartFile.getBytes());
-    fos.close();
-    return file;
-  }
-
-  public List<BookDetails> getBookDetail(File file) throws IOException {
-
-    BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-    CSVParser csvParser = new CSVParser(bufferedReader,
-        CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());
-
-    List<BookDetails> bookDetailsList = new ArrayList<>();
-
-    Iterable<CSVRecord> csvRecords = csvParser.getRecords();
-    for (CSVRecord csvRecord : csvRecords
-    ) {
-      BookDetails bookDetails = new BookDetails(csvRecord.get("bookname"),
-          csvRecord.get("isbn"),
-          csvRecord.get("author"),
-          csvRecord.get("publisher"),
-          csvRecord.get("edition"),
-          csvRecord.get("genre"),
-          csvRecord.get("segment"),
-          Double.parseDouble(csvRecord.get("price")),
-          Integer.parseInt(csvRecord.get("quantity")),
-          bookStoreService
-              .getBookStoreByName(file.getName().substring(0, file.getName().lastIndexOf('.'))));
-
-      bookDetailsList.add(bookDetails);
+    public List<File> convertToFile(MultipartFile[] multipartFile, List<String> invalidFiles) throws IOException {
+        List<File> validFiles = new ArrayList<>();
+        for (MultipartFile singleFile :
+             multipartFile) {
+            if(!invalidFiles.stream().anyMatch(s-> s.equals(singleFile.getOriginalFilename()))){
+                File file = new File(singleFile.getOriginalFilename());
+                file.createNewFile();
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(singleFile.getBytes());
+                fos.close();
+                validFiles.add(file);
+            }
+        }
+        return validFiles;
     }
-    return bookDetailsList;
-  }
 
-  public boolean updateStock(MultipartFile[] multipartFiles) throws IOException {
-    validateCsvFile(multipartFiles);
-    File inputFile = convertToFile(file);
-    List<BookDetails> bookDetailsList = getBookDetail(inputFile);
+    public List<BookDetails> getBookDetail(List<File> fileList) throws IOException {
 
-    try {
-      bookDetailRepository.saveAll(bookDetailsList);
-      uploadFileToS3(inputFile);
-      return true;
-    } catch (Exception e) {
-      log.error("Error saving book details to the database", e);
-      throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
-          "Failed to save book details to the repository! ");
+        List<BookDetails> bookDetailsList = new ArrayList<>();
+        for (File file:
+             fileList) {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            CSVParser csvParser = new CSVParser(bufferedReader,
+                    CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());
+            Iterable<CSVRecord> csvRecords = csvParser.getRecords();
+            for (CSVRecord csvRecord : csvRecords
+            ) {
+                BookDetails bookDetails = new BookDetails(csvRecord.get("bookname"),
+                        csvRecord.get("isbn"),
+                        csvRecord.get("author"),
+                        csvRecord.get("publisher"),
+                        csvRecord.get("edition"),
+                        csvRecord.get("genre"),
+                        csvRecord.get("segment"),
+                        Double.parseDouble(csvRecord.get("price")),
+                        Integer.parseInt(csvRecord.get("quantity")),
+                        bookStoreService
+                                .getBookStoreByName(file.getName().substring(0, file.getName().lastIndexOf('.'))));
+
+                bookDetailsList.add(bookDetails);
+            }
+        }
+       return bookDetailsList;
     }
-  }
 
-  public void uploadFileToS3(File file) throws Exception{
-    try {
-      ObjectMetadata metadata = new ObjectMetadata();
-      metadata.setContentLength(file.length());
-      String fileKey = file.getName()
-          .concat("_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
-      amazonS3.putObject(bucketName, fileKey, new FileInputStream(file), metadata);
-    }catch (IOException | AmazonClientException e){
-      throw new Exception("Failed to upload file to S3! ");
+    public boolean createStock(MultipartFile[] multipartFiles) throws IOException {
+        // check if file input is a valid csv or not
+        // return the list of invalid files
+        List<String> invalidFiles = validateCsvFile(multipartFiles);
+        List<File> inputFile = convertToFile(multipartFiles, invalidFiles);
+        List<BookDetails> bookDetailsList = getBookDetail(inputFile);
+
+        try {
+            bookDetailRepository.saveAll(bookDetailsList);
+            //uploadFileToS3(inputFile);
+            return true;
+        } catch (Exception e) {
+            //TODO log check
+            //log.error("Error saving book details to the database", e);
+            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to save book details to the repository! ");
+        }
     }
-  }
+
+    public void uploadFileToS3(File file) throws Exception {
+        try {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(file.length());
+            String fileKey = file.getName()
+                    .concat("_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
+            amazonS3.putObject(bucketName, fileKey, new FileInputStream(file), metadata);
+        } catch (IOException | AmazonClientException e) {
+            throw new Exception("Failed to upload file to S3! ");
+        }
+    }
+
+    public List<String> createStockOnParallel(MultipartFile[] multipartFiles) {
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+
+        Callable<List<String>> validateCsv = () -> {
+            return validateCsvFile(multipartFiles);
+        };
+        Future<List<String>> future = executorService.submit(validateCsv);
+
+        Runnable convertMultipartToFile = () -> {
+            try{
+                convertToFile(multipartFiles,future.get());
+            }catch (IOException e){
+             log.error("Failed to read csv file ", e);
+            }   catch (  InterruptedException | ExecutionException e ){
+                log.error("failed to convert multipart to file for execution");
+            }
+        };
+        Runnable createStock = () -> {
+            try {
+                createStock(multipartFiles);
+            }catch (IOException e){
+                log.error(" Failed to create stock from input file");
+            }
+
+        };
+        executorService.execute(convertMultipartToFile);
+        executorService.execute(createStock);
+        try{
+            List<String> invalidFile = future.get();
+            if(!invalidFile.isEmpty()){
+                return invalidFile;
+            }
+        }catch (ExecutionException e){
+            log.error("Error in execution! ");
+        }
+        return new ArrayList<String>();
+    }
+
 }
