@@ -45,7 +45,7 @@ public class BookDetails {
   private String segment;
 
   @NotNull
-  private String price;
+  private double price;
 
   @NotNull
   private int quantity;
@@ -58,7 +58,7 @@ public class BookDetails {
       @NotNull String isbn, @NotNull String author,
       @NotNull String publisher, @NotNull String edition,
       @NotNull String genre, @NotNull String segment,
-      @NotNull String price, @NotNull int quantity,
+      @NotNull double price, @NotNull int quantity,
       BookStoreDetail bookStoreDetail) {
     this.bookname = bookname;
     this.isbn = isbn;

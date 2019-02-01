@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,10 +22,9 @@ public class BookDetailController {
   BookDetailService bookDetailService;
 
 
-  @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/sequential", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity addBookToStore(
-      @PathVariable("storeName") @RequestParam("file") MultipartFile multipartFile) {
-    bookDetailService.validateCsvFile(multipartFile);
+      @PathVariable("storeName") @RequestPart("file") MultipartFile[] multipartFile) {
     try {
       bookDetailService.updateStock(multipartFile);
       return ResponseEntity.ok("Book details added successfully! ");
@@ -35,6 +34,5 @@ public class BookDetailController {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body("Book details addition failed! ");
     }
-
   }
 }
