@@ -108,10 +108,9 @@ public class BookDetailService {
         return bookDetailsList;
     }
 
-    public boolean createStock(MultipartFile[] multipartFiles) throws IOException {
+    public boolean createStock(MultipartFile[] multipartFiles, List<String> invalidFiles) throws IOException {
         // check if file input is a valid csv or not
         // return the list of invalid files
-        List<String> invalidFiles = validateCsvFile(multipartFiles);
         List<File> inputFile = convertToFile(multipartFiles, invalidFiles);
         List<BookDetails> bookDetailsList = getBookDetail(inputFile);
 
@@ -144,22 +143,22 @@ public class BookDetailService {
 
         List<String> invalidFiles = validateCsvFile(multipartFiles);
 
-        Runnable convertMultipartToFile = () -> {
+     /*   Runnable convertMultipartToFile = () -> {
             try {
                 convertToFile(multipartFiles, invalidFiles);
             } catch (IOException e) {
                 log.error("Failed to read csv file ", e);
             }
-        };
+        };*/
         Runnable createStock = () -> {
             try {
-                createStock(multipartFiles);
+                createStock(multipartFiles, invalidFiles);
             } catch (IOException e) {
                 log.error(" Failed to create stock from input file");
             }
 
         };
-        executorService.execute(convertMultipartToFile);
+        //executorService.execute(convertMultipartToFile);
         executorService.execute(createStock);
         if (!invalidFiles.isEmpty()) {
             return invalidFiles;

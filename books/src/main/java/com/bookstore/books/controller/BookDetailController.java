@@ -4,6 +4,7 @@ package com.bookstore.books.controller;
 import com.bookstore.books.service.BookDetailService;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,8 @@ public class BookDetailController {
     @PostMapping(value = "/sequential", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addBookToStore(@RequestPart("file") MultipartFile[] multipartFiles) {
         try {
-            bookDetailService.createStock(multipartFiles);
+            List<String> invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
+            bookDetailService.createStock(multipartFiles, invalidFiles);
             return ResponseEntity.ok("Book details added successfully! ");
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to read file ");
