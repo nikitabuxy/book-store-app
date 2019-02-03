@@ -219,8 +219,10 @@ public class BookDetailService {
     }
 
     public void removeBookInventory(String isbn) {
+        BookDetails bookDetails ;
         try {
-            bookDetailRepository.removeByIsbn(isbn);
+            bookDetails = bookDetailRepository.findByIsbn(isbn);
+            bookDetailRepository.deleteById(bookDetails.getId());
         } catch (Exception e) {
             log.error("Delete book operation failed", e);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to remove book details from the inventory! ");
