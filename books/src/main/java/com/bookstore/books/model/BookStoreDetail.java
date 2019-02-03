@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-public class BookStoreDetail {
+public class BookStoreDetail extends TimeStamp{
 
   @Id
   @GeneratedValue

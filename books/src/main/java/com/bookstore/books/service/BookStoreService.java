@@ -34,6 +34,7 @@ public class BookStoreService {
     try {
           return bookStoreRepository.save(bookStoreDetail);
     }catch (Exception e){
+        log.error("Error adding book store!", e);
       throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,"Failed to add book store! ");
     }
   }

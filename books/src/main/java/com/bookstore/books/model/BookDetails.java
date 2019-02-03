@@ -13,10 +13,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Getter
-@Setter
 @NoArgsConstructor
-public class BookDetails {
+public class BookDetails extends TimeStamp{
 
 
   @Id
@@ -37,6 +35,104 @@ public class BookDetails {
 
   @NotNull
   private String edition;
+
+  private int discount;
+
+  public int getDiscount() {
+    return discount;
+  }
+
+  public void setDiscount(int discount) {
+    this.discount = discount;
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getBookname() {
+    return bookname;
+  }
+
+  public void setBookname(String bookname) {
+    this.bookname = bookname;
+  }
+
+  public String getIsbn() {
+    return isbn;
+  }
+
+  public void setIsbn(String isbn) {
+    this.isbn = isbn;
+  }
+
+  public String getAuthor() {
+    return author;
+  }
+
+  public void setAuthor(String author) {
+    this.author = author;
+  }
+
+  public String getPublisher() {
+    return publisher;
+  }
+
+  public void setPublisher(String publisher) {
+    this.publisher = publisher;
+  }
+
+  public String getEdition() {
+    return edition;
+  }
+
+  public void setEdition(String edition) {
+    this.edition = edition;
+  }
+
+  public String getGenre() {
+    return genre;
+  }
+
+  public void setGenre(String genre) {
+    this.genre = genre;
+  }
+
+  public String getSegment() {
+    return segment;
+  }
+
+  public void setSegment(String segment) {
+    this.segment = segment;
+  }
+
+  public double getPrice() {
+    return price;
+  }
+
+  public void setPrice(double price) {
+    this.price = price;
+  }
+
+  public int getQuantity() {
+    return quantity;
+  }
+
+  public void setQuantity(int quantity) {
+    this.quantity = quantity;
+  }
+
+  public BookStoreDetail getBookStoreDetail() {
+    return bookStoreDetail;
+  }
+
+  public void setBookStoreDetail(BookStoreDetail bookStoreDetail) {
+    this.bookStoreDetail = bookStoreDetail;
+  }
 
   @NotNull
   private String genre;
