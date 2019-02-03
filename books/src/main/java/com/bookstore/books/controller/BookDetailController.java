@@ -90,8 +90,8 @@ public class BookDetailController {
 
         List<BookDetails> bookDetails = bookDetailService.searchBook(bookName, author);
 
-        if (StringUtils.isEmpty(bookDetails)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No book exists with the given ISBN");
+        if (bookDetails == null || bookDetails.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No book exists with the given search details! ");
         } else {
             return ResponseEntity.ok(bookDetails);
         }
@@ -105,11 +105,11 @@ public class BookDetailController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number");
         }
 
-        bookDetailService.removeBookInventory(isbn);
+        bookDetailService. removeBookInventory(isbn);
         return ResponseEntity.ok("Book details removed successfully! ");
     }
 
-    @PutMapping(value = "/{isbn}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateBookDetails(@RequestBody BookDetails bookDetails){
         if (StringUtils.isEmpty(bookDetails)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid book details! ");
@@ -119,16 +119,15 @@ public class BookDetailController {
         return ResponseEntity.ok("Book details updated successfully! ");
     }
 
-/*
-    @PutMapping(value = "/{isbn}", consumes =  MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+/*    @PutMapping(value = "/{isbn}", consumes =  MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity purchaseBook(@PathVariable("isbn") String isbn){
         if (StringUtils.isEmpty(isbn)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number to purchase a book ");
         }
         bookDetailService.purchaseBook(isbn);
         return ResponseEntity.ok("Book Purchase successful!");
-    }
-*/
+    }*/
+
 
     @PutMapping(value = "/discount/{percentage}", produces =  MediaType.APPLICATION_JSON_VALUE )
     public ResponseEntity discountPrice(@PathVariable("percentage")String discount){

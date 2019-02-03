@@ -34,6 +34,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	//implementation 'org.springframework.cloud:spring-cloud-starter-aws'
+	// https://mvnrepository.com/artifact/nio/nio
+	compile group: 'nio', name: 'nio', version: '1.0.4'
 	runtimeOnly 'mysql:mysql-connector-java'
 	compileOnly 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

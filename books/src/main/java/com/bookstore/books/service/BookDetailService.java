@@ -7,13 +7,13 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -52,7 +52,7 @@ public class BookDetailService {
         return invalidFiles;
     }
 
-    public File convertToFile(MultipartFile multipartFile, List<String> invalidFiles) throws IOException {
+    private File convertToFile(MultipartFile multipartFile, List<String> invalidFiles) throws IOException {
         File convertedFile = null;
         if (invalidFiles.stream().noneMatch(s -> s.equals(multipartFile.getOriginalFilename()))) {
             convertedFile = getFile(multipartFile);
@@ -120,13 +120,14 @@ public class BookDetailService {
         }
     }*/
 
-    public List<String> createStockOnParallel(MultipartFile[] multipartFiles, List<String> invalidFiles) {
+    public List<String> createStockOnParallel(MultipartFile[] multipartFiles, List<String> invalidFiles) throws IOException{
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         for (MultipartFile multipartFile :
                 multipartFiles) {
+            File file = convertToFile(multipartFile, invalidFiles);
             Runnable createStock = () -> {
                 try {
-                    addSingleFile(multipartFile, invalidFiles);
+                    addSingleFile(file, invalidFiles);
                 } catch (IOException e) {
                     log.error(" Failed to create stock from input file");
                 }
@@ -157,12 +158,12 @@ public class BookDetailService {
                     csvRecord.get("genre"),
                     csvRecord.get("segment"),
                     Double.parseDouble(csvRecord.get("price")),
-                    Integer.parseInt(csvRecord.get("quantity")),
-                    bookStoreService
-                            .getBookStoreByName(file.getName().substring(0, file.getName().lastIndexOf('.'))));
-                bookDetails.setLastCreatedAt(new Date());
-                bookDetailsList.add(bookDetails);
-                   }
+                    Integer.parseInt(csvRecord.get("quantity"))
+                    );
+            //bookStoreService.getBookStoreByName(file.getName().substring(0, file.getName().lastIndexOf('.')))
+            bookDetails.setLastCreatedAt(new Date());
+            bookDetailsList.add(bookDetails);
+        }
         return bookDetailsList;
     }
 /*
@@ -187,8 +188,8 @@ public class BookDetailService {
     }*/
 
 
-    private void addSingleFile(MultipartFile multipartFile, List<String> invalidFiles) throws IOException {
-        File inputFile = convertToFile(multipartFile, invalidFiles);
+    private void addSingleFile(File inputFile, List<String> invalidFiles) throws IOException {
+        //File inputFile = convertToFile(multipartFile, invalidFiles);
         List<BookDetails> bookDetails = parseSingleFile(inputFile, new ArrayList<BookDetails>());
         try {
             bookDetailRepository.saveAll(bookDetails);
@@ -210,16 +211,16 @@ public class BookDetailService {
 
     public List<BookDetails> searchBook(String bookName, String author) {
         try {
-            return bookDetailRepository.findByBooknameIgnoreCaseLikeAndAuthorIgnoreCaseLike(bookName, author);
+            return bookDetailRepository.findByBooknameIgnoreCaseContainingAndAuthorIgnoreCaseContaining(bookName, author);
         } catch (Exception e) {
+            log.error("Failed to fetch book required! ", e);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not fetch book details! ");
         }
     }
 
     public void removeBookInventory(String isbn) {
-        BookDetails bookDetails;
         try {
-            bookDetails = bookDetailRepository.deleteByIsbn(isbn);
+            bookDetailRepository.removeByIsbn(isbn);
         } catch (Exception e) {
             log.error("Delete book operation failed", e);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to remove book details from the inventory! ");
@@ -234,30 +235,31 @@ public class BookDetailService {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not fetch book details! ");
         }
 
-       if (!bookDetails.getEdition().equals(savedBookDetails.getEdition()) && !bookDetails.getBookname().equals(savedBookDetails.getBookname())) {
+        if (!bookDetails.getEdition().equals(savedBookDetails.getEdition()) && !bookDetails.getBookname().equals(savedBookDetails.getBookname())) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Name (or) Edition must not be updated for an ISBN number! ");
         }
         bookDetails.setId(savedBookDetails.getId());
-       bookDetails.setLastUpdatedAt(new Date());
+        bookDetails.setLastUpdatedAt(new Date());
         try {
             bookDetailRepository.save(bookDetails);
         } catch (Exception e) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update book details in the inventory! ");
         }
     }
-    public void purchaseBook(String isbn){
+
+    public void purchaseBook(String isbn) {
         BookDetails existingBookDetails = bookDetailRepository.findByIsbn(isbn);
 
-        if(existingBookDetails == null){
+        if (existingBookDetails == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "No book exists with the given ISBN! ");
         }
-        if(existingBookDetails.getQuantity() == 0){
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST,"Book Out of stock! ");
+        if (existingBookDetails.getQuantity() == 0) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Book Out of stock! ");
         }
         existingBookDetails.setQuantity(existingBookDetails.getQuantity() - 1);
-        try{
+        try {
             bookDetailRepository.save(existingBookDetails);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Error updating quantity of books after purchase! ", e);
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Error updating quantity of books after purchase!");
         }

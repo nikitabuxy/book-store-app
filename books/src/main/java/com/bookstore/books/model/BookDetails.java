@@ -154,8 +154,8 @@ public class BookDetails extends TimeStamp{
       @NotNull String isbn, @NotNull String author,
       @NotNull String publisher, @NotNull String edition,
       @NotNull String genre, @NotNull String segment,
-      @NotNull double price, @NotNull int quantity,
-      BookStoreDetail bookStoreDetail) {
+      @NotNull double price, @NotNull int quantity){
+      //BookStoreDetail bookStoreDetail) {
     this.bookname = bookname;
     this.isbn = isbn;
     this.author = author;
@@ -165,6 +165,6 @@ public class BookDetails extends TimeStamp{
     this.segment = segment;
     this.price = price;
     this.quantity = quantity;
-    this.bookStoreDetail = bookStoreDetail;
+    //this.bookStoreDetail = bookStoreDetail;
   }
 }
