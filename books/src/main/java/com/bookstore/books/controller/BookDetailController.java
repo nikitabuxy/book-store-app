@@ -2,8 +2,10 @@ package com.bookstore.books.controller;
 
 
 import com.bookstore.books.model.BookDetails;
+import com.bookstore.books.model.Discount;
 import com.bookstore.books.service.BookDetailService;
 
+import com.bookstore.books.util.BookPurchaseRequest;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -119,23 +121,23 @@ public class BookDetailController {
         return ResponseEntity.ok("Book details updated successfully! ");
     }
 
-/*    @PutMapping(value = "/{isbn}", consumes =  MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity purchaseBook(@PathVariable("isbn") String isbn){
-        if (StringUtils.isEmpty(isbn)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number to purchase a book ");
+     @PostMapping(value = "/purchase", consumes =  MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity purchaseBook(@RequestBody BookPurchaseRequest bookPurchaseRequest ){
+        if (StringUtils.isEmpty(bookPurchaseRequest)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter valid book details !!!  ");
         }
-        bookDetailService.purchaseBook(isbn);
+        bookDetailService.purchaseBook(bookPurchaseRequest);
         return ResponseEntity.ok("Book Purchase successful!");
-    }*/
+    }
 
 
-    @PutMapping(value = "/discount/{percentage}", produces =  MediaType.APPLICATION_JSON_VALUE )
-    public ResponseEntity discountPrice(@PathVariable("percentage")String discount){
+  /*  @PostMapping(value = "/discount", produces =  MediaType.APPLICATION_JSON_VALUE )
+    public ResponseEntity discountScheme(@RequestBody Discount discount){
         if (StringUtils.isEmpty(discount)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number to purchase a book ");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter valid discount detail input!  ");
         }
 
-        //bookDetailService.bulkDiscount(discount);
+        bookDetailService.discountPeriod(discount);
         return null;
-    }
+    }*/
 }
