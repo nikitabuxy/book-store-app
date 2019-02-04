@@ -29,6 +29,7 @@ Book level operations include :
  	API reference: 
 		-- POST <URL>/book/sequential 
 		-- POST <URL>/book/parallel	
+	Note : After saving into the database , file is dumped to a S3 bucket
 	
  2. Update individual book details 
  	API reference:
