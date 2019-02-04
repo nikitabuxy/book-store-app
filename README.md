@@ -14,15 +14,17 @@ Book model
 	-- Price
 	-- Quantity
 	-- ISBN
+	
 REST operations: 
-		-- C - enter list of books -- file input
-			-- check if book exists - if yes - U - increase the quantity
-		-- R - view a book detail
-		-- search book by name/author/publisher 
-			-- might give a list of books based on editions, show only latest or all?
-			-- quantity of book
+Book Store Application
 
-		-- U - update -- quantity of books available after purchase
-			-- stock update - enter new file 
-		-- D - delete a book
-			-- discontinue selling a book - delete book details
+Brief : Book Store application that supports addition of a new book store. 
+
+Book level operations include :
+ 1. Add multiple books with respect to each book store 
+ 2. Update individual book details 
+ 3. View a book's details
+ 4. Remove a book from the book store
+ 5. Purchase of a book 
+ 
+Assumption : Each book is uniquely identified by a combination of it's name , author and ISBN number.
