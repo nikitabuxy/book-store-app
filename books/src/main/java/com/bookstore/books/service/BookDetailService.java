@@ -102,7 +102,8 @@ public class BookDetailService {
     for (MultipartFile multipartFile :
         multipartFiles) {
       File file = convertToFile(multipartFile, invalidFiles);
-      inputFileList.add(file);
+      if(file != null)
+        inputFileList.add(file);
     }
     List<BookDetails> bookDetailsList = getBookDetail(inputFileList);
 
