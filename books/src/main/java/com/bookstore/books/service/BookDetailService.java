@@ -27,14 +27,12 @@ import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BookDetailService {
+public class BookDetailService implements Runnable {
 
   private BookStoreService bookStoreService;
 
@@ -51,7 +49,8 @@ public class BookDetailService {
 
     for (MultipartFile singleFile : multipartFile
     ) {
-      if (singleFile.getOriginalFilename() != null && !singleFile.getOriginalFilename().endsWith(".csv")) {
+      if (singleFile.getOriginalFilename() != null && !singleFile.getOriginalFilename()
+          .endsWith(".csv")) {
         log.error("Not a valid csv input: " + singleFile.getOriginalFilename());
         invalidFiles.add(singleFile.getOriginalFilename());
       }
@@ -60,10 +59,10 @@ public class BookDetailService {
   }
 
   public List<File> convertToFile(MultipartFile[] multipartFileList, List<String> invalidFiles)
-      throws IOException {
+      throws CustomException {
     List<File> generatedFiles = new ArrayList<>();
-    for (MultipartFile multipartFile:
-    multipartFileList) {
+    for (MultipartFile multipartFile :
+        multipartFileList) {
       File convertedFile = null;
       if (invalidFiles.stream().noneMatch(s -> s.equals(multipartFile.getOriginalFilename()))) {
         convertedFile = getFile(multipartFile);
@@ -74,13 +73,20 @@ public class BookDetailService {
     return generatedFiles;
   }
 
-  private File getFile(MultipartFile singleFile) throws IOException {
+  private File getFile(MultipartFile singleFile) throws CustomException {
     log.info("Get file method begins! ");
     File file = new File(singleFile.getOriginalFilename());
-    file.createNewFile();
-    FileOutputStream fos = new FileOutputStream(file);
-    fos.write(singleFile.getBytes());
-    fos.close();
+    try {
+      file.createNewFile();
+      FileOutputStream fos = new FileOutputStream(file);
+      fos.write(singleFile.getBytes());
+      fos.close();
+    } catch (IOException e) {
+      log.error("Cannot convert multipart to file", e);
+      throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR,
+          "Failed to convert Multipart File to File");
+    }
+
     log.info("Get file method ends! ");
     return file;
   }
@@ -131,25 +137,47 @@ public class BookDetailService {
 
   public void createStockOnParallel(List<File> inputFileList) throws CustomException {
     ExecutorService executorService = Executors.newSingleThreadExecutor();
-    for (File file:
+    for (File file :
         inputFileList) {
-      Runnable createStock = () -> {
-        try {
-          log.info("### Saving file {}", file.getName());
-          addSingleFile(file);
-        } catch (Throwable e) {
-          //log.error(" Failed to create stock from input file");
-          //throw CustomException.get(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload file: ", e);
-        }
-      };
-      executorService.execute(createStock);
+      try {
+        Runnable createStock = () -> {
+          //log.info("### Saving file {}", file.getName());
+          try {
+            addSingleFile(file);
+          } catch (CustomException ex) {
+            throw new RuntimeException(ex);
+          }
+        };
+        executorService.execute(createStock);
+      } catch (RuntimeException e) {
+        log.error(" Failed to create stock from input file");
+        throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+      }
+
     }
   }
+
+/*  public void createStockOnParallel(List<File> inputFileList) throws CustomException {
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    for (File file :
+        inputFileList) {
+      Callable<?> task = new Callable<Void>() {
+        public Void call() throws Exception {
+
+          //log.info("### Saving file {}", file.getName());
+          addSingleFile(file);
+          return null;
+
+          }
+      };
+      Future<?> future = executorService.submit(task);
+    }
+  }*/
 
   private List<BookDetails> parseSingleFile(File file, List<BookDetails> bookDetailsList)
       throws CustomException {
 
-    BufferedReader bufferedReader ;
+    BufferedReader bufferedReader;
     CSVParser csvParser;
     Iterable<CSVRecord> csvRecords;
     try {
@@ -157,8 +185,8 @@ public class BookDetailService {
       csvParser = new CSVParser(bufferedReader,
           CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());
       csvRecords = csvParser.getRecords();
-    } catch (IOException e){
-      throw  new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse CSV file");
+    } catch (IOException e) {
+      throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse CSV file");
     }
 
     for (CSVRecord csvRecord : csvRecords
@@ -199,7 +227,6 @@ public class BookDetailService {
         }
     }*/
 
-
   private void addSingleFile(File inputFile) throws CustomException {
     List<BookDetails> bookDetails = parseSingleFile(inputFile, new ArrayList<>());
     try {
@@ -212,7 +239,7 @@ public class BookDetailService {
     }
   }
 
-  public BookDetails getBookDetails(String isbn) throws CustomException{
+  public BookDetails getBookDetails(String isbn) throws CustomException {
     try {
       return bookDetailRepository.findByIsbn(isbn);
     } catch (Exception e) {
@@ -221,7 +248,7 @@ public class BookDetailService {
     }
   }
 
-  public List<BookDetails> searchBook(String bookName, String author) throws CustomException{
+  public List<BookDetails> searchBook(String bookName, String author) throws CustomException {
     try {
       return bookDetailRepository
           .findByBooknameIgnoreCaseContainingAndAuthorIgnoreCaseContaining(bookName, author);
@@ -232,7 +259,7 @@ public class BookDetailService {
     }
   }
 
-  public void removeBookInventory(String isbn) throws CustomException{
+  public void removeBookInventory(String isbn) throws CustomException {
     BookDetails bookDetails;
     try {
       bookDetails = bookDetailRepository.findByIsbn(isbn);
@@ -269,7 +296,7 @@ public class BookDetailService {
     }
   }
 
-  public void purchaseBook(BookPurchaseRequest bookPurchaseRequest) throws CustomException{
+  public void purchaseBook(BookPurchaseRequest bookPurchaseRequest) throws CustomException {
     BookDetails existingBookDetails = bookDetailRepository
         .findByBooknameAndAuthorAndEdition(bookPurchaseRequest.getBookname(),
             bookPurchaseRequest.getAuthor(), bookPurchaseRequest.getEdition());
@@ -289,6 +316,15 @@ public class BookDetailService {
         throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR,
             "Error updating quantity of books after purchase!");
       }
+    }
+  }
+
+  @Override
+  public void run() {
+    try {
+      addSingleFile(new File(""));
+    } catch (CustomException e) {
+      e.printStackTrace();
     }
   }
 }

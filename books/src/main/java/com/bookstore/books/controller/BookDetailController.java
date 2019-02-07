@@ -5,7 +5,7 @@ import com.bookstore.books.model.BookDetails;
 import com.bookstore.books.service.BookDetailService;
 import com.bookstore.books.util.BookPurchaseRequest;
 import com.bookstore.books.util.CustomException;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,39 +34,41 @@ public class BookDetailController {
 
   @PostMapping(value = "/sequential", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity addBookToStore(@RequestPart("file") MultipartFile[] multipartFiles) {
+    List<String> invalidFiles ;
 
     try {
-      List<String> invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
-      bookDetailService.createStockOnSequential(bookDetailService.convertToFile(multipartFiles, invalidFiles));
-      if (invalidFiles.isEmpty()) {
-        return ResponseEntity.ok("Files added successfully! ");
-      } else {
-        return ResponseEntity.ok("The following files are not valid CSV files: " +
-            String.join(" , ", invalidFiles));
-      }
-    } catch (IOException e) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to read file ");
+      invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
+      bookDetailService
+          .createStockOnSequential(bookDetailService.convertToFile(multipartFiles, invalidFiles));
     } catch (CustomException e) {
       return ResponseEntity.status(e.getHttpStatus())
           .body(e.getMessage());
+    }
+    if (invalidFiles.isEmpty()) {
+      return ResponseEntity.ok("Files added successfully! ");
+    } else {
+      return ResponseEntity.ok("The following files are not valid CSV files: " +
+          String.join(" , ", invalidFiles));
     }
   }
 
   @PostMapping(value = "/parallel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity addBooksToStore(@RequestPart("file") MultipartFile[] multipartFiles) {
-
+    List<String> invalidFiles;
     try {
-      List<String> invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
-      bookDetailService.createStockOnParallel(bookDetailService.convertToFile(multipartFiles,invalidFiles));
-      if (invalidFiles.isEmpty()) {
-        return ResponseEntity.ok("Books added successfully! ");
-      } else {
-        return ResponseEntity.ok("The following files are not valid CSV files: " +
-            String.join(" , ", invalidFiles));
-      }
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body("Book details addition failed! ");
+      invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
+      bookDetailService
+          .createStockOnParallel(bookDetailService.convertToFile(multipartFiles, invalidFiles));
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus())
+          .body(e.getMessage());
+    }
+
+    if (invalidFiles.isEmpty()) {
+      return ResponseEntity.ok("Books added successfully! ");
+    } else {
+      return ResponseEntity.ok("The following files are not valid CSV files: " +
+          String.join(" , ", invalidFiles));
     }
   }
 
@@ -76,14 +78,10 @@ public class BookDetailController {
     if (StringUtils.isEmpty(isbn)) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number");
     }
-
-    BookDetails bookDetails = bookDetailService.getBookDetails(isbn);
-
-    if (StringUtils.isEmpty(bookDetails)) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .body("No book exists with the given ISBN");
-    } else {
-      return ResponseEntity.ok(bookDetails);
+    try {
+      return ResponseEntity.ok(bookDetailService.getBookDetails(isbn));
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
     }
   }
 
@@ -96,16 +94,11 @@ public class BookDetailController {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST)
           .body("Provide at least either one of book name or author ");
     }
-
-    List<BookDetails> bookDetails = bookDetailService.searchBook(bookName, author);
-
-    if (bookDetails == null || bookDetails.isEmpty()) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .body("No book exists with the given search details! ");
-    } else {
-      return ResponseEntity.ok(bookDetails);
+    try {
+      return ResponseEntity.ok(bookDetailService.searchBook(bookName, author));
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
     }
-
   }
 
   @DeleteMapping(value = "/{isbn}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -114,9 +107,12 @@ public class BookDetailController {
     if (StringUtils.isEmpty(isbn)) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid ISBN number");
     }
-
-    bookDetailService.removeBookInventory(isbn);
-    return ResponseEntity.ok("Book details removed successfully! ");
+    try {
+      bookDetailService.removeBookInventory(isbn);
+      return ResponseEntity.ok("Book details removed successfully! ");
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+    }
   }
 
   @PutMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -124,9 +120,12 @@ public class BookDetailController {
     if (StringUtils.isEmpty(bookDetails)) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid book details! ");
     }
-
-    bookDetailService.updateBookDetails(bookDetails);
-    return ResponseEntity.ok("Book details updated successfully! ");
+    try {
+      bookDetailService.updateBookDetails(bookDetails);
+      return ResponseEntity.ok("Book details updated successfully! ");
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+    }
   }
 
   @PostMapping(value = "/purchase", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -134,11 +133,13 @@ public class BookDetailController {
     if (StringUtils.isEmpty(bookPurchaseRequest)) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter valid book details !!!  ");
     }
-    bookDetailService.purchaseBook(bookPurchaseRequest);
-    return ResponseEntity.ok("Book Purchase successful!");
+    try {
+      bookDetailService.purchaseBook(bookPurchaseRequest);
+      return ResponseEntity.ok("Book Purchase successful!");
+    }catch (CustomException e){
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+    }
   }
-
-
   /*  @PostMapping(value = "/discount", produces =  MediaType.APPLICATION_JSON_VALUE )
     public ResponseEntity discountScheme(@RequestBody Discount discount){
         if (StringUtils.isEmpty(discount)) {

@@ -15,12 +15,19 @@ public class CustomException extends Throwable {
     this.httpStatus = httpStatus;
     this.message = message;
   }
+/*
 
   public static CustomException get(HttpStatus status, String message, Throwable th) {
     log.error("Class: {}, Message: {}, Stacktrace: {}", th.getClass(), th.getMessage(), th.getStackTrace());
     return new CustomException(status, message);
   }
+*/
 
+
+  public static  CustomException getRuntimeException(HttpStatus status, String message , Throwable cause){
+    //super(message, cause);
+    return new CustomException(status, message);
+  }
 
   public CustomException(HttpStatus httpStatus){
     this.httpStatus = httpStatus;
