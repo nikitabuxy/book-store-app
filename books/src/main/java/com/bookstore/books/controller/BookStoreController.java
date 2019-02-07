@@ -2,7 +2,7 @@ package com.bookstore.books.controller;
 
 import com.bookstore.books.model.BookStoreDetail;
 import com.bookstore.books.service.BookStoreService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/bookstore")
+@RequiredArgsConstructor
 public class BookStoreController {
 
-  @Autowired
-  BookStoreService bookStoreService;
+  private BookStoreService bookStoreService;
 
   @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity createBookStore(@RequestBody BookStoreDetail bookStoreDetail) {
