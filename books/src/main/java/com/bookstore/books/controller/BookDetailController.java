@@ -5,12 +5,14 @@ import com.bookstore.books.model.BookDetails;
 import com.bookstore.books.service.BookDetailService;
 import com.bookstore.books.util.BookPurchaseRequest;
 import com.bookstore.books.util.CustomException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,15 +31,17 @@ import org.springframework.web.multipart.MultipartFile;
 public class BookDetailController {
 
 
-  private BookDetailService bookDetailService;
-
+  private final BookDetailService bookDetailService;
 
   @PostMapping(value = "/sequential", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity addBookToStore(@RequestPart("file") MultipartFile[] multipartFiles) {
-    List<String> invalidFiles ;
-
+    List<String> invalidFiles;
     try {
       invalidFiles = bookDetailService.validateCsvFile(multipartFiles);
+
+      if (ObjectUtils.isEmpty(invalidFiles)) {
+        invalidFiles = Collections.emptyList();
+      }
       bookDetailService
           .createStockOnSequential(bookDetailService.convertToFile(multipartFiles, invalidFiles));
     } catch (CustomException e) {
@@ -136,7 +140,7 @@ public class BookDetailController {
     try {
       bookDetailService.purchaseBook(bookPurchaseRequest);
       return ResponseEntity.ok("Book Purchase successful!");
-    }catch (CustomException e){
+    } catch (CustomException e) {
       return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
     }
   }

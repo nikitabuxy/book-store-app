@@ -32,13 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class BookDetailService implements Runnable {
+public class BookDetailService {
 
-  private BookStoreService bookStoreService;
+  private final AmazonS3 amazonS3;
 
-  private AmazonS3 amazonS3;
-
-  private BookDetailRepository bookDetailRepository;
+  private final BookDetailRepository bookDetailRepository;
 
   @Value("${aws.s3.survey.bucket}")
   private String bucketName;
@@ -129,14 +127,11 @@ public class BookDetailService implements Runnable {
       amazonS3.putObject(bucketName, fileKey, new FileInputStream(file), metadata);
     } catch (IOException | AmazonClientException e) {
       log.error("Error uploading file to S3! ", e);
-      //    throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
-      //  "Failed to upload file to S3!");
-      //throw new Exception("Failed to upload file to S3! ");
     }
   }
 
   public void createStockOnParallel(List<File> inputFileList) throws CustomException {
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    ExecutorService executorService = Executors.newFixedThreadPool(5);
     for (File file :
         inputFileList) {
       try {
@@ -156,23 +151,6 @@ public class BookDetailService implements Runnable {
 
     }
   }
-
-/*  public void createStockOnParallel(List<File> inputFileList) throws CustomException {
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
-    for (File file :
-        inputFileList) {
-      Callable<?> task = new Callable<Void>() {
-        public Void call() throws Exception {
-
-          //log.info("### Saving file {}", file.getName());
-          addSingleFile(file);
-          return null;
-
-          }
-      };
-      Future<?> future = executorService.submit(task);
-    }
-  }*/
 
   private List<BookDetails> parseSingleFile(File file, List<BookDetails> bookDetailsList)
       throws CustomException {
@@ -206,28 +184,8 @@ public class BookDetailService implements Runnable {
     }
     return bookDetailsList;
   }
-/*
-    private synchronized boolean  checkDuplicateBookEntry(BookDetails bookDetails){
-        BookDetails existingBookDetails = bookDetailRepository.findByBookNameAndEditionAndIsbn(bookDetails.getBookname(), bookDetails.getEdition(), bookDetails.getIsbn());
 
-        if(existingBookDetails == null){
-            return false;
-        }
-*//*        if (!bookDetails.getEdition().equals(existingBookDetails.getEdition()) && !bookDetails.getBookname().equals(existingBookDetails.getBookname())) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Name (or) Edition must not be updated for an ISBN number! ");
-        }*//*
-        bookDetails.setQuantity(existingBookDetails.getQuantity() + bookDetails.getQuantity());
-        bookDetails.setId(existingBookDetails.getId());
-        try{
-            bookDetailRepository.save(bookDetails);
-            return true;
-        }catch (Exception e){
-            log.error("Addition of quantity of existing book failed");
-                    throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR,"Failed to update book inventory");
-        }
-    }*/
-
-  private void addSingleFile(File inputFile) throws CustomException {
+  public void addSingleFile(File inputFile) throws CustomException {
     List<BookDetails> bookDetails = parseSingleFile(inputFile, new ArrayList<>());
     try {
       bookDetailRepository.saveAll(bookDetails);
@@ -319,12 +277,4 @@ public class BookDetailService implements Runnable {
     }
   }
 
-  @Override
-  public void run() {
-    try {
-      addSingleFile(new File(""));
-    } catch (CustomException e) {
-      e.printStackTrace();
-    }
-  }
 }

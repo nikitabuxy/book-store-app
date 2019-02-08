@@ -4,8 +4,10 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
+import lombok.Data;
 
 @Entity
+@Data
 public class BookStoreDetail {
 
   @Id
@@ -18,27 +20,4 @@ public class BookStoreDetail {
   @NotNull
   private String address;
 
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public String getStoreName() {
-    return storeName;
-  }
-
-  public void setStoreName(String storeName) {
-    this.storeName = storeName;
-  }
-
-  public String getAddress() {
-    return address;
-  }
-
-  public void setAddress(String address) {
-    this.address = address;
-  }
 }

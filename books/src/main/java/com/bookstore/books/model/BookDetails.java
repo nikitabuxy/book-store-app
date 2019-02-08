@@ -5,13 +5,11 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 public class BookDetails {
 
@@ -56,7 +54,6 @@ public class BookDetails {
       @NotNull String publisher, @NotNull int edition,
       @NotNull String genre, @NotNull String segment,
       @NotNull double price, @NotNull int quantity) {
-    //BookStoreDetail bookStoreDetail) {
     this.bookname = bookname;
     this.isbn = isbn;
     this.author = author;
@@ -66,6 +63,5 @@ public class BookDetails {
     this.segment = segment;
     this.price = price;
     this.quantity = quantity;
-    //this.bookStoreDetail = bookStoreDetail;
   }
 }

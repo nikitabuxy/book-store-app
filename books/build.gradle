@@ -34,7 +34,9 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-csv', version: '1.4'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testCompile group: 'junit', name: 'junit', version: '4.12'
-
+    compile('org.flywaydb:flyway-core')
+    //compile('org.springframework.boot:spring-boot-starter-jdbc')
+    //compile('mysql:mysql-connector-java')
 }
 
 

@@ -2,6 +2,7 @@ package com.bookstore.books.controller;
 
 import com.bookstore.books.model.BookStoreDetail;
 import com.bookstore.books.service.BookStoreService;
+import com.bookstore.books.util.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +20,12 @@ public class BookStoreController {
 
   @PostMapping(value = "/", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity createBookStore(@RequestBody BookStoreDetail bookStoreDetail) {
-
-    bookStoreService.validateRequest(bookStoreDetail);
-    bookStoreService.addBookStore(bookStoreDetail);
-    return ResponseEntity.ok("Book store added successfully! ");
+    try {
+      bookStoreService.validateRequest(bookStoreDetail);
+      bookStoreService.addBookStore(bookStoreDetail);
+      return ResponseEntity.ok("Book store added successfully! ");
+    } catch (CustomException e) {
+      return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+    }
   }
 }
